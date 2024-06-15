@@ -1,31 +1,379 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34728.123
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tierra", "tierra\tierra.vcxproj", "{10F68092-FA70-4265-83C9-7D70A173631F}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Debug|x64.ActiveCfg = Debug|x64
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Debug|x64.Build.0 = Debug|x64
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Debug|x86.ActiveCfg = Debug|Win32
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Debug|x86.Build.0 = Debug|Win32
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Release|x64.ActiveCfg = Release|x64
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Release|x64.Build.0 = Release|x64
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Release|x86.ActiveCfg = Release|Win32
-		{10F68092-FA70-4265-83C9-7D70A173631F}.Release|x86.Build.0 = Release|Win32
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {71D19B6D-165F-418F-BE23-ACD110C1EE6B}
-	EndGlobalSection
-EndGlobal
+#include <iostream>
+#include <windows.h>
+#include <conio.h>
+#include <cstdio>
+#include <stdlib.h>
+#include <list>
+
+#define ARRIBA 72
+#define IZQUIERDA 75
+#define DERECHA 77
+#define ABAJO 80
+#define CORAZON 101
+#define LETRAA 97
+
+void gotoxy(int x, int y) {
+    HANDLE hCon;
+    hCon = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD dwPos;
+    dwPos.X = x;
+    dwPos.Y = y;
+
+    SetConsoleCursorPosition(hCon, dwPos);
+}
+
+
+/**
+ * @brief Скрывает курсор в окне консоли.
+ *
+ * Эта функция устанавливает видимость курсора в окне консоли в скрытое состояние.
+ * Курсор не будет виден пользователю после вызова этой функции.
+ *
+ * @note Эта функция использует специфичные для Windows API вызовы и не будет работать на платформах, отличных от Windows.
+ */
+
+void OcultarCursor() {
+    HANDLE hCon;
+    hCon = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    CONSOLE_CURSOR_INFO cci;
+    cci.dwSize = 2;
+    cci.bVisible = FALSE;  
+
+    SetConsoleCursorInfo(hCon, &cci);
+}
+
+void pintar_limites() {
+    for (int i = 2; i < 78; i++) {
+        gotoxy(i, 3);
+        std::cout << char(205);
+        gotoxy(i, 33);
+        std::cout << char(205);
+    }
+    for (int i = 4; i < 33; i++) {
+        gotoxy(2, i);
+        std::cout << char(186);
+        gotoxy(77, i);
+        std::cout << char(186);
+    }
+    gotoxy(2, 3);
+    std::cout << char(201);
+    gotoxy(2, 33);
+    std::cout << char(200);
+    gotoxy(77, 3);
+    std::cout << char(187);
+    gotoxy(77, 33);
+    std::cout << char(188);
+}
+
+class NAVE {
+    int x, y;
+    int corazones;
+    int vidas;
+public:
+    NAVE(int _x, int _y, int _corazones, int _vidas);
+    int X() { return x; }
+    int Y() { return y; }
+    int VID() { return vidas; }
+    void COR() { corazones--; }
+    void pintar();
+    void borrar();
+    void mover();
+    void pintar_corazones();
+    void morir();
+
+};
+
+NAVE::NAVE(int _x, int _y, int _corazones, int _vidas) {
+    x = _x;
+    y = _y;
+    corazones = _corazones;
+    vidas = _vidas;
+}
+
+
+/**
+ * @brief Отображает космический корабль на консольном экране.
+ *
+ * Эта функция использует функцию `gotoxy` для позиционирования курсора и вывода
+ * графического представления космического корабля на текущих координатах (x, y).
+ * Корабль рисуется с использованием специфических ASCII символов для формирования его формы.
+ *
+ * @note Функция `gotoxy` предполагается определенной в другом месте и используется для
+ *       перемещения курсора в указанные координаты перед выводом.
+ */
+void NAVE::pintar() {
+    gotoxy(x + 2, y);
+    std::cout << char(30);
+    gotoxy(x + 1, y + 1);
+    std::cout << char(91) << char(240) << char(93);
+    gotoxy(x, y + 2);
+    std::cout << char(30) << char(176) <<char(176) << char(176) << char(30);
+}
+
+void NAVE::borrar() {
+    gotoxy(x  , y);
+    std::cout << "          ";
+    gotoxy(x , y + 1 );
+    std::cout << "       ";
+    gotoxy(x, y + 2);
+    std::cout << "       ";
+}
+
+/**
+ * @brief Перемещает космический корабль в зависимости от введенных пользователем команд.
+ *
+ * Эта функция проверяет, была ли нажата клавиша, и если да, то перемещает корабль
+ * в соответствии с направлением, указанным пользователем. Корабль может двигаться влево,
+ * вправо, вверх и вниз в пределах заданных границ. Также функция обновляет отображение
+ * корабля и его здоровья после перемещения.
+ *
+ * @note Для проверки нажатия клавиши используется функция `_kbhit()`, а для считывания
+ *       нажатой клавиши — `_getch()`. Эти функции специфичны для Windows и могут не работать
+ *       на других платформах.
+ */
+void NAVE::mover() {
+  
+    if (_kbhit()) { 
+        char tecla = _getch();
+        borrar();
+        if (tecla == IZQUIERDA && x > 3) x--;
+        if (tecla == DERECHA && x + 3 < 77) x++;
+        if (tecla == ARRIBA && y > 4) y--;
+        if (tecla == ABAJO && y + 3 < 33) y++;
+        if (tecla == CORAZON)corazones--;
+        pintar_corazones();
+        pintar();
+
+    }
+}
+
+void NAVE::pintar_corazones() {
+
+    gotoxy(50, 2);
+    std::cout << "VIDAS " << vidas;
+    gotoxy(64, 2);
+    std::cout << "Salud";
+    gotoxy(70, 2);
+    std::cout << " ";
+    for (int i = 0; i < 3; i++) {
+        gotoxy(70 + i, 2);
+        if (i < corazones) {
+            std::cout << char(3);
+        }
+        else {
+            std::cout << ' ' ;
+        }
+    }
+}
+
+void NAVE::morir() {
+    if (corazones == 0) {
+        borrar();
+        gotoxy(x, y);
+        std::cout << "   **   ";
+        gotoxy(x, y + 1);
+        std::cout << "  ****  ";
+        gotoxy(x, y + 2);
+        std::cout << "   **   ";
+        Sleep(200);
+
+        borrar();
+        gotoxy(x, y);
+        std::cout << " * ** *";
+        gotoxy(x, y + 1);
+        std::cout << "  ****  ";
+        gotoxy(x, y + 2);
+        std::cout << " * ** *";
+        Sleep(200);
+        borrar();
+
+        vidas--;
+        corazones = 3;
+        pintar_corazones();
+        pintar();
+    }
+}
+
+
+/**
+ * @class AST
+ * @brief Представляет астероид в игре с координатами и поведением.
+ *
+ * Класс AST описывает астероид, который имеет координаты на экране и может перемещаться,
+ * отображаться, а также взаимодействовать с космическим кораблем (класс NAVE).
+ */
+class AST{
+    int x, y;
+public:
+    AST(int _x, int _y);
+    void pintar();
+    void mover();
+    void choque(class NAVE &N);
+    int X() { return x; }
+    int Y() { return y; }
+
+
+};
+AST::AST(int _x, int _y) {
+    x = _x;
+    y = _y;
+}
+
+void AST::pintar() {
+    gotoxy(x, y);
+    std::cout << char(254);
+}
+
+void AST::mover() {
+    gotoxy(x, y);
+    std::cout << "  ";
+    y++;
+    if (y > 32) {
+        x = rand() % 71 + 4;
+        y = 4;
+    }
+    pintar();
+}
+
+
+/**
+ * @brief Проверяет столкновение астероида с космическим кораблем и обрабатывает его.
+ *
+ * Эта функция проверяет, находится ли астероид в области, занимаемой космическим кораблем.
+ * Если столкновение происходит, уменьшает количество жизней космического корабля,
+ * обновляет его отображение и отображает текущее количество жизней.
+ *
+ * @param N Ссылка на объект класса NAVE, представляющий космический корабль.
+ */
+void AST::choque(class NAVE& N) {
+    if (x >= N.X() && x < N.X() + 3 && y >= N.Y() && y <= N.Y() + 2) {
+        N.COR();
+        N.borrar();
+        N.pintar();
+        N.pintar_corazones();
+       
+    }
+}
+
+class BALA {
+    int x, y;
+public:
+    BALA(int _x, int _y);
+    int X() { return x; }
+    int Y() { return y; }
+    void mover();
+    bool fuera();
+};
+BALA::BALA(int _x, int _y) {
+    x = _x;
+    y = _y;
+}
+
+/**
+ * @brief Перемещает пулю вверх по экрану.
+ *
+ * Эта функция стирает пулю с текущей позиции, уменьшает её координату y на один пиксель
+ * и затем рисует пулю на новой позиции. Таким образом, пуля движется вверх по экрану.
+ *
+ * @note Функция использует `gotoxy` для позиционирования курсора перед выводом пули.
+ *       `gotoxy` предполагается определенной в другом месте и используется для
+ *       перемещения курсора в указанные координаты перед выводом.
+ */
+void BALA::mover() {
+    gotoxy(x, y);
+    std::cout << " ";
+     y--;
+    gotoxy(x, y);
+    std::cout << "*";
+
+
+}
+
+bool BALA::fuera() {
+    if (y == 4) return true;
+    return false; 
+}
+
+int main() {
+    OcultarCursor();
+    pintar_limites();
+    NAVE N(37, 30, 3, 3);
+    N.pintar();
+    N.pintar_corazones();
+
+    std::list<AST*>A;
+    std::list<AST*>::iterator itA;
+    for (int i = 0; i < 5; i++) {
+        A.push_back(new AST(rand() % 75 + 3, rand() % 5 + 4));
+
+    }
+
+    std::list <BALA*> B;
+    std::list<BALA*>::iterator it;
+
+    bool game_over = false;
+    int puntos = 0;
+
+    while (!game_over) {
+
+        gotoxy(4, 2);
+        std::cout << "Puntos " << int(puntos);
+
+        if (_kbhit())
+        {
+            char tecla = _getch();
+            if (tecla == LETRAA)
+                B.push_back(new BALA(N.X() + 2, N.Y() - 1));
+        }
+        for (it = B.begin(); it != B.end(); ++it) {
+            (*it)->mover();
+            if ((*it)->fuera()) {
+                gotoxy((*it)->X(), (*it)->Y());
+                std::cout << " ";
+                delete(*it);
+                it = B.erase(it);
+            }
+        }
+
+        for (itA = A.begin(); itA != A.end(); ++itA) {
+            (*itA)->mover();
+            (*itA)->choque(N);
+        }
+
+        for (itA = A.begin(); itA != A.end(); itA++) {
+            for (it = B.begin(); it != B.end(); it++ ) {
+                if ((*itA)->X() == (*it)->X() && ((*itA)->Y() + 1 == (*it)->Y() || (*itA)->Y() + 1 == (*it)->Y())) {
+                    gotoxy((*it)->X(), (*it)->Y());
+                    std::cout << " ";
+                    delete(*it);
+                    it = B.erase(it);
+                   
+                    A.push_back(new AST(rand()%74 + 3, 4));
+                    gotoxy((*itA)->X(), (*itA)->Y());
+                    std::cout << " ";
+                    delete(*itA);
+                    itA = A.erase(itA);
+
+                    puntos += 5;
+
+                }
+
+            }
+        }
+        if (N.VID() == 0) game_over = true;
+
+        N.morir();
+        N.mover();
+        
+        Sleep(50);
+    }
+
+    return 0;
+}
+
+
+
+
+
+
