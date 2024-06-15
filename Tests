@@ -1,0 +1,56 @@
+#include <gtest/gtest.h>
+#include <iostream>
+#include <windows.h>
+#include <conio.h>
+#include <cstdio>
+#include <stdlib.h>
+#include <list>
+
+// Включаем код класса NAVE и других необходимых функций
+// ...
+
+TEST(NAVETest, Movement) {
+    NAVE nave(37, 30, 3, 3);
+    int initialX = nave.X();
+    int initialY = nave.Y();
+
+    // Перемещение влево
+    nave.mover();
+    EXPECT_EQ(nave.X(), initialX - 1);
+
+    // Перемещение вправо
+    nave.mover();
+    EXPECT_EQ(nave.X(), initialX);
+
+    // Перемещение вверх
+    nave.mover();
+    EXPECT_EQ(nave.Y(), initialY - 1);
+
+    // Перемещение вниз
+    nave.mover();
+    EXPECT_EQ(nave.Y(), initialY);
+}
+
+TEST(ASTTest, Collision) {
+    NAVE nave(37, 30, 3, 3);
+    AST ast(37, 30);
+
+    int initialCorazones = nave.VID();
+
+    ast.choque(nave);
+    EXPECT_EQ(nave.VID(), initialCorazones - 1);
+}
+
+TEST(BALATest, MovementAndDestruction) {
+    BALA bala(37, 30);
+    int initialY = bala.Y();
+
+    bala.mover();
+    EXPECT_EQ(bala.Y(), initialY - 1);
+
+    // Проверка на уничтожение пули
+    while (!bala.fuera()) {
+        bala.mover();
+    }
+    EXPECT_TRUE(bala.fuera());
+}
